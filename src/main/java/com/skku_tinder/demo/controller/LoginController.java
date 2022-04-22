@@ -1,23 +1,31 @@
 package com.skku_tinder.demo.controller;
 
+import com.skku_tinder.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
 public class LoginController {
 
-    @GetMapping("/login/oauth")
-    public String login()
+    private final UserService userService;
+
+    @GetMapping("/login/kakao/callback")
+    public String login(@RequestParam String code)
     {
-        return "oauth test";
+        System.out.println(code);
+        userService.kakaoLogin(code);
+
+        return "redirect:/";
     }
 
-    @RequestMapping("/")
+    @GetMapping("/")
     public String login2()
     {
-        return "ok";
+        return "index";
     }
 }
