@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Getter
 @Setter
@@ -50,4 +53,5 @@ public class User {
         this.role = role;
         this.kakaoId = kakaoId;
     }
+
 }
