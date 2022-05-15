@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -29,7 +31,9 @@ public class InitDb {
 
         private final UserRepository userRepository;
         public void dbInit(){
-            User user = new User("dldudtls@naver.com", "123", "dldudtls2@naver.com", UserRole.USER);
+            List<String> grades = new ArrayList<>();
+            grades.add("gold");
+            User user = new User("dldudtls@naver.com", "123", "dldudtls2@naver.com", UserRole.USER, grades);
             userRepository.save(user);
         }
     }
