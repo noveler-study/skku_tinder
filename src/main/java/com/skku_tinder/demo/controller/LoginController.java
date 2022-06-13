@@ -17,7 +17,7 @@ public class LoginController {
     @GetMapping("/login/kakao/callback")
     public String login(@RequestParam String code)
     {
-        System.out.println(code);
+        System.out.println("컨트롤러에서 받은 코드" + code);
         userService.kakaoLogin(code);
 
         return "redirect:/";

@@ -1,7 +1,6 @@
 package com.skku_tinder.demo.service;
 
 import com.skku_tinder.demo.domain.User;
-import com.skku_tinder.demo.domain.UserRole;
 import com.skku_tinder.demo.dto.SignupRequestDto;
 import com.skku_tinder.demo.repository.UserRepository;
 import com.skku_tinder.demo.security.kakao.KakaoOAuth2;
@@ -15,6 +14,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 
 @Service
@@ -46,15 +47,13 @@ public class UserService {
         String password = passwordEncoder.encode(requestDto.getPassword());
         String email = requestDto.getEmail();
         // 사용자 ROLE 확인
-        UserRole role = UserRole.USER;
         if (requestDto.isAdmin()) {
             if (!requestDto.getAdminToken().equals(ADMIN_TOKEN)) {
                 throw new IllegalArgumentException("관리자 암호가 틀려 등록이 불가능합니다.");
             }
-            role = UserRole.ADMIN;
         }
 
-        User user = new User(username, password, email, role);
+        User user = new User(username, password, email);
         userRepository.save(user);
     }
 
@@ -72,26 +71,26 @@ public class UserService {
 
         String username = nickname;
         String password = kakaoId + ADMIN_TOKEN;
-        /*
         // DB 에 중복된 Kakao Id 가 있는지 확인
         User kakaoUser = userRepository.findByKakaoId(kakaoId)
                 .orElse(null);
 
-        // 카카오 정보로 회원가입
-        if (kakaoUser == null) {*/
-        User kakaoUser;
-        // 패스워드 인코딩
-        String encodedPassword = passwordEncoder.encode(password);
-        // ROLE = 사용자
-        UserRole role = UserRole.USER;
+        // 중복된 id가 없을 경우 회원가입
+        if (kakaoUser == null) {    
+            // 패스워드 인코딩
+            String encodedPassword = passwordEncoder.encode(password);
 
-        kakaoUser = new User(nickname, encodedPassword, email, role, kakaoId);
-        userRepository.save(kakaoUser);
+            ArrayList<String> grades = new ArrayList<>();
+            grades.add("NORMAL_USER");
 
-
-        /* 로그인 처리
+            kakaoUser = new User(nickname, encodedPassword, email, kakaoId, grades);
+            userRepository.save(kakaoUser);
+        }
+        System.out.println("userSErvice!!!!");
+        //카카오 계정으로 로그인
         Authentication kakaoUsernamePassword = new UsernamePasswordAuthenticationToken(username, password);
         Authentication authentication = authenticationManager.authenticate(kakaoUsernamePassword);
-        SecurityContextHolder.getContext().setAuthentication(authentication);*/
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
     }
 }

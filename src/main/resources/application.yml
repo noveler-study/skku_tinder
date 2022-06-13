@@ -16,5 +16,5 @@ spring:
         default_batch_fetch_size: 100
 logging:
   level:
-    org.hibernate.SQL: debug #띄어쓰기 2칸
-    org.hibernate.type: trace #띄어쓰기 2칸  / sql 실행 파라미터의 타입을 말해줌
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace

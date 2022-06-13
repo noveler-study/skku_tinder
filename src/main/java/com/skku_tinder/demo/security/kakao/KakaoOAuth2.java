@@ -19,7 +19,7 @@ public class KakaoOAuth2 {
             String accessToken = getAccessToken(authorizedCode);
             // 2. 액세스 토큰 -> 카카오 사용자 정보
             KakaoUserInfo userInfo = getUserInfoByToken(accessToken);
-            System.out.println(accessToken + authorizedCode);
+            System.out.println("userinfo" + accessToken + authorizedCode);
             return userInfo;
         }
 
