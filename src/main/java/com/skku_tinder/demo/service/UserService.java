@@ -45,6 +45,19 @@ public class UserService {
         this.refreshTokenJpaRepo = refreshTokenJpaRepo;
     }
 
+    //토큰 생성 메소드
+    private TokenDto makeToken(User user)
+    {
+        TokenDto tokenDto = jwtTokenProvider.createToken(String.valueOf(user.getId()), user.getGrades());
+        RefreshToken refreshToken = RefreshToken.builder()
+                .key(user.getId())
+                .token(tokenDto.getRefreshToken())
+                .build();
+        refreshTokenJpaRepo.save(refreshToken);
+        System.out.println("makeToken = " + tokenDto.toString());
+        return tokenDto;
+
+    }
 
     public void registerUser(SignupReqDto requestDto) {
         String username = requestDto.getUsername();
@@ -68,7 +81,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void kakaoLogin(String authorizedCode) {
+    public TokenDto kakaoLogin(String authorizedCode) {
         // 카카오 OAuth2 를 통해 카카오 사용자 정보 조회
         KakaoUserInfo userInfo = null;
         try {
@@ -80,6 +93,7 @@ public class UserService {
         String nickname = userInfo.getNickname();
         String email = userInfo.getEmail();
 
+        System.out.println("nickname: "+ nickname);
         String username = nickname;
         String password = kakaoId + ADMIN_TOKEN;
         // DB 에 중복된 Kakao Id 가 있는지 확인
@@ -92,18 +106,14 @@ public class UserService {
             String encodedPassword = passwordEncoder.encode(password);
 
             ArrayList<String> grades = new ArrayList<>();
-            grades.add("NORMAL_USER");
+            grades.add("ROLE_USER");
 
             kakaoUser = new User(nickname, encodedPassword, email, kakaoId, grades);
             userRepository.save(kakaoUser);
         }
-        System.out.println("userSErvice!!!!");
-        //카카오 계정으로 로그인
-        Authentication kakaoUsernamePassword = new UsernamePasswordAuthenticationToken(username, password);
-        Authentication authentication = authenticationManager.authenticate(kakaoUsernamePassword);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
+        return makeToken(kakaoUser);
     }
+
 
     public Long signup(SignupReqDto signupReqDto){
         if(userRepository.findByUsername(signupReqDto.getUsername()).orElse(null) == null)
@@ -118,21 +128,13 @@ public class UserService {
         if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new IllegalArgumentException("잘못된 비밀번호입니다.");
         }
-
-        TokenDto tokenDto = jwtTokenProvider.createToken(String.valueOf(member.getId()), member.getGrades());
-
-        RefreshToken refreshToken = RefreshToken.builder()
-                .key(member.getId())
-                .token(tokenDto.getRefreshToken())
-                .build();
-        refreshTokenJpaRepo.save(refreshToken);
-        return tokenDto;
+        return makeToken(member);
     }
 
 
     //만료된 토큰 새로 발급받기
 
-    public String reissue(TokenReqDto tokenReqDto) {
+    public TokenDto reissue(TokenReqDto tokenReqDto) {
         if(!jwtTokenProvider.validateToken(tokenReqDto.getRefreshToken())){
             throw new IllegalArgumentException("refresh token 오류");
         }
@@ -152,6 +154,6 @@ public class UserService {
         RefreshToken updateRefreshTk = refreshToken.updateToken(newTk.getRefreshToken());
         refreshTokenJpaRepo.save(updateRefreshTk);
 
-        return newTk.toString();
+        return newTk;
     }
 }

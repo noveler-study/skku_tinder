@@ -1,5 +1,6 @@
 package com.skku_tinder.demo.controller;
 
+import com.skku_tinder.demo.dto.TokenDto;
 import com.skku_tinder.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -17,9 +18,8 @@ public class LoginController {
     @GetMapping("/login/kakao/callback")
     public String login(@RequestParam String code)
     {
-        System.out.println("컨트롤러에서 받은 코드" + code);
-        userService.kakaoLogin(code);
-
+        TokenDto token = userService.kakaoLogin(code);
+        System.out.println(token.toString());
         return "redirect:/";
     }
 
