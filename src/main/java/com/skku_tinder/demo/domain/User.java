@@ -87,6 +87,7 @@ public class User implements UserDetails {
         this.email = email;
     }
 
+
     public User(String nickname, String encodedPassword, String email, Long kakaoId, List<String> grades) {
         this.username = nickname;
         this.password = encodedPassword;
