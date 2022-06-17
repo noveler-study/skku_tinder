@@ -57,6 +57,7 @@ public class JwtTokenProvider {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .accessTokenExpireDate(accessTokenValidTime)
+                .refreshTokenExpireDate(refreshTokenValidTime)
                 .build();
 
 
@@ -69,8 +70,6 @@ public class JwtTokenProvider {
         {
             throw new IllegalArgumentException("권한 정보가 없습니다");
         }
-        System.out.println(claims.get("roles"));
-        System.out.println(claims.getSubject());
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
@@ -101,5 +100,12 @@ public class JwtTokenProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // 로그아웃 시 남은 expiration time 시간 저장
+    public Long getExpiration(String accessToken) {
+        Date expiration = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(accessToken).getBody().getExpiration();
+        Long now= new Date().getTime();
+        return (expiration.getTime() - now);
     }
 }

@@ -19,7 +19,6 @@ public class LoginController {
     public String login(@RequestParam String code)
     {
         TokenDto token = userService.kakaoLogin(code);
-        System.out.println(token.toString());
         return "redirect:/";
     }
 

@@ -13,6 +13,8 @@ import com.skku_tinder.demo.security.kakao.KakaoOAuth2;
 import com.skku_tinder.demo.security.kakao.KakaoUserInfo;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Transactional
@@ -33,30 +36,33 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenJpaRepo refreshTokenJpaRepo;
+    private final RedisTemplate<String, String> redisTemplate;
     private static final String ADMIN_TOKEN = "AAABnv/xRVklrnYxKZ0aHgTBcXukeZygoC";
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, KakaoOAuth2 kakaoOAuth2, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, RefreshTokenJpaRepo refreshTokenJpaRepo) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, KakaoOAuth2 kakaoOAuth2, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, RefreshTokenJpaRepo refreshTokenJpaRepo, RedisTemplate<String, String> redisTemplate) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.kakaoOAuth2 = kakaoOAuth2;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenJpaRepo = refreshTokenJpaRepo;
+        this.redisTemplate = redisTemplate;
     }
 
     //토큰 생성 메소드
     private TokenDto makeToken(User user)
     {
         TokenDto tokenDto = jwtTokenProvider.createToken(String.valueOf(user.getId()), user.getGrades());
+        /* Redis 사용하지 않고 H2 DB에 RefreshToken 저장
         RefreshToken refreshToken = RefreshToken.builder()
                 .key(user.getId())
                 .token(tokenDto.getRefreshToken())
                 .build();
-        refreshTokenJpaRepo.save(refreshToken);
-        System.out.println("makeToken = " + tokenDto.toString());
+        refreshTokenJpaRepo.save(refreshToken); */
+        redisTemplate.opsForValue().set("RT:"+user.getId(), tokenDto.getRefreshToken(), tokenDto.getRefreshTokenExpireDate(), TimeUnit.MILLISECONDS);
+        System.out.println("RT:"+user.getId());
         return tokenDto;
-
     }
 
     public void registerUser(SignupReqDto requestDto) {
@@ -143,17 +149,38 @@ public class UserService {
         Authentication authentication = jwtTokenProvider.getAuthentication(accessTk);
         User user = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> {throw new IllegalArgumentException("Invalid refresh Token");});
+        /* Redis 미 사용
         RefreshToken refreshToken = refreshTokenJpaRepo.findByKey(user.getId())
-                .orElseThrow(() -> {throw new IllegalArgumentException("No refresh Token");});
+                .orElseThrow(() -> {throw new IllegalArgumentException("No refresh Token");});*/
+        String refreshToken = redisTemplate.opsForValue().get("RT:" + user.getId());
 
-        if(!refreshToken.getToken().equals(tokenReqDto.getRefreshToken())){
+        if(!refreshToken.equals(tokenReqDto.getRefreshToken())){
             throw new IllegalArgumentException("refresh token 불일치");
         }
 
         TokenDto newTk = jwtTokenProvider.createToken(String.valueOf(user.getId()), user.getGrades());
+        /* Redis 미 사용
         RefreshToken updateRefreshTk = refreshToken.updateToken(newTk.getRefreshToken());
-        refreshTokenJpaRepo.save(updateRefreshTk);
-
+        refreshTokenJpaRepo.save(updateRefreshTk); */
+        redisTemplate.opsForValue().set("RT:" + user.getId(), newTk.getRefreshToken(), newTk.getRefreshTokenExpireDate(), TimeUnit.MILLISECONDS);
         return newTk;
+    }
+
+    public String logout(String accessToken) {
+        if(!jwtTokenProvider.validateToken(accessToken)){
+            return "fail";
+        }
+
+        Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+        User user = userRepository.findByUsername(authentication.getName()).orElse(null);
+        String userId = String.valueOf(user.getId());
+        if(redisTemplate.opsForValue().get("RT:" + userId) != null)
+        {
+            redisTemplate.delete("RT:" + userId);
+        }
+        Long expiration = jwtTokenProvider.getExpiration(accessToken);
+        redisTemplate.opsForValue().set(accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
+
+        return "success";
     }
 }

@@ -1,8 +1,10 @@
 package com.skku_tinder.demo.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.filter.GenericFilterBean;
 
 import javax.servlet.FilterChain;
@@ -16,6 +18,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends GenericFilterBean {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -24,11 +27,14 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
         System.out.println("token : " + token);
         // 유효한 토큰인지 확인합니다.
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 토큰이 유효하면 토큰으로부터 유저 정보를 받아옵니다.
-            System.out.println("여기까찌@@@");
-            Authentication authentication = jwtTokenProvider.getAuthentication(token);
-            // SecurityContext 에 Authentication 객체를 저장합니다.
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String logout = redisTemplate.opsForValue().get(token);
+            System.out.println("여기까찌@@@ / logout : " + logout);
+            if(ObjectUtils.isEmpty(logout)) {   //로그아웃되지 않았을 경우
+                // 토큰이 유효하면 토큰으로부터 유저 정보를 받아옵니다.
+                Authentication authentication = jwtTokenProvider.getAuthentication(token);
+                // SecurityContext 에 Authentication 객체를 저장합니다.
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
         chain.doFilter(request, response);
     }

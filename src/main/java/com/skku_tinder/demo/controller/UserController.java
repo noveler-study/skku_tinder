@@ -12,10 +12,7 @@ import com.skku_tinder.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.Map;
@@ -44,6 +41,13 @@ public class UserController {
 
     }
 
+//    //로그아웃
+//    @GetMapping("/logout")
+//    public String logout(@RequestHeader(value="X-AUTH-TOKEN") String accessToken)
+//    {
+//        System.out.println("logout 실행, 토큰 : " +  accessToken);
+//        return userService.logout(accessToken);
+//    }
 
     // 로그인
     @PostMapping("/login")
@@ -52,6 +56,7 @@ public class UserController {
         TokenDto tokenDto = userService.login(user.get("username"), user.get("password"));
         return tokenDto;
     }
+
 
     @PostMapping("/reissue")
     public TokenDto reissue(@RequestBody Map<String, String> req)
@@ -62,6 +67,14 @@ public class UserController {
                 .refreshToken(req.get("refreshToken"))
                 .build();
         return userService.reissue(tokenReqDto);
+    }
+
+    //로그아웃
+    @GetMapping("/temp")
+    public String logout(@RequestHeader(value="X-AUTH-TOKEN") String accessToken)
+    {
+        System.out.println("logout 실행, 토큰 : " +  accessToken);
+        return userService.logout(accessToken);
     }
 
 
