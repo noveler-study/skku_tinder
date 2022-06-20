@@ -26,7 +26,7 @@ public class UserController {
         return userRepository.save(User.builder()
                 .username(user.get("username"))
                 .password(passwordEncoder.encode(user.get("password")))
-                .grades(Collections.singletonList("NORMAL_USER")) // 최초 가입시 USER 로 설정
+                .grades(Collections.singletonList("USER")) // 최초 가입시 USER 로 설정
                 .build()).getId();
     }
 
