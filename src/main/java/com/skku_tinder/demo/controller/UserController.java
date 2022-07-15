@@ -6,10 +6,13 @@ import com.skku_tinder.demo.dto.LoginResDto;
 import com.skku_tinder.demo.dto.SignupReqDto;
 import com.skku_tinder.demo.dto.TokenDto;
 import com.skku_tinder.demo.dto.TokenReqDto;
+import com.skku_tinder.demo.exception.UserAuthException;
 import com.skku_tinder.demo.repository.UserRepository;
 import com.skku_tinder.demo.security.JwtTokenProvider;
 import com.skku_tinder.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.http.HttpRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +28,20 @@ public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final UserService userService;
+
+    //에러 처리 로직
+    @ExceptionHandler(value = UserAuthException.class)
+    public JSONObject controllerExceptionHanlder(Exception e)
+    {
+        JSONObject responseJson = new JSONObject();
+        try {
+            responseJson.put("message", e.getMessage());
+            responseJson.put("code", 500);
+        } catch (JSONException jsonException) {
+            jsonException.printStackTrace();
+        }
+        return responseJson;
+    }
 
     // 회원가입
     @PostMapping("/join")
@@ -54,6 +71,14 @@ public class UserController {
     public TokenDto login(@RequestBody Map<String, String> user) {
         System.out.println("controller 시작");
         TokenDto tokenDto = userService.login(user.get("username"), user.get("password"));
+        return tokenDto;
+    }
+
+
+    // 자동로그인
+    @PostMapping("/autoLogin")
+    public TokenDto autoLogin(@RequestHeader(value = "X-AUTH-TOKEN") String token) {
+        TokenDto tokenDto = userService.Autologin(token);
         return tokenDto;
     }
 

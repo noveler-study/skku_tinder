@@ -6,6 +6,7 @@ import com.skku_tinder.demo.dto.LoginResDto;
 import com.skku_tinder.demo.dto.SignupReqDto;
 import com.skku_tinder.demo.dto.TokenDto;
 import com.skku_tinder.demo.dto.TokenReqDto;
+import com.skku_tinder.demo.exception.UserAuthException;
 import com.skku_tinder.demo.repository.RefreshTokenJpaRepo;
 import com.skku_tinder.demo.repository.UserRepository;
 import com.skku_tinder.demo.security.JwtTokenProvider;
@@ -182,5 +183,24 @@ public class UserService {
         redisTemplate.opsForValue().set(accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
 
         return "success";
+    }
+
+    public TokenDto Autologin(String accessToken) {
+        Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+        User user = userRepository.findByUsername(authentication.getName()).orElse(null);
+        if(jwtTokenProvider.validateToken(accessToken)) {
+            Long expiration = jwtTokenProvider.getExpiration(accessToken);
+            redisTemplate.opsForValue().set(accessToken, "logout", expiration, TimeUnit.MILLISECONDS);
+            return makeToken(user);
+        }
+        else
+        {
+            String userId = String.valueOf(user.getId());
+            String refreshToken = redisTemplate.opsForValue().get("RT:" + userId);
+            if(refreshToken != null)
+                return reissue(TokenReqDto.builder().refreshToken(refreshToken).accessToken(accessToken).build());
+            else
+                throw new UserAuthException("로그인 세션이 만료되었습니다");
+        }
     }
 }
