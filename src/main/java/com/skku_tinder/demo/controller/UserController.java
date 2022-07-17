@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -29,19 +30,30 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserService userService;
 
-    //에러 처리 로직
+//    //에러 처리 로직
+//    @ExceptionHandler(value = UserAuthException.class)
+//    public JSONObject controllerExceptionHanlder(Exception e)
+//    {
+//        JSONObject responseJson = new JSONObject();
+//        System.out.println("11111");
+//        try {
+//            responseJson.put("message", e.getMessage());
+//            responseJson.put("code", 500);
+//        } catch (JSONException jsonException) {
+//            System.out.println("2222");
+//            jsonException.printStackTrace();
+//        }
+//        return responseJson;
+//    }
+
     @ExceptionHandler(value = UserAuthException.class)
-    public JSONObject controllerExceptionHanlder(Exception e)
+    public Map<String, String> controllerExceptionHanlder(Exception e)
     {
-        JSONObject responseJson = new JSONObject();
-        try {
-            responseJson.put("message", e.getMessage());
-            responseJson.put("code", 500);
-        } catch (JSONException jsonException) {
-            jsonException.printStackTrace();
-        }
-        return responseJson;
+        Map<String, String> result = new HashMap<>();
+        result.put("error", e.getMessage());
+        return result;
     }
+
 
     // 회원가입
     @PostMapping("/join")

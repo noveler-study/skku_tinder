@@ -71,7 +71,7 @@ public class UserService {
         // 회원 ID 중복 확인
         Optional<User> found = userRepository.findByUsername(username);
         if (found.isPresent()) {
-            throw new IllegalArgumentException("중복된 사용자 ID 가 존재합니다.");
+            throw new UserAuthException("중복된 사용자 ID 가 존재합니다.");
         }
 
         // 패스워드 인코딩
@@ -80,7 +80,7 @@ public class UserService {
         // 사용자 ROLE 확인
         if (requestDto.isAdmin()) {
             if (!requestDto.getAdminToken().equals(ADMIN_TOKEN)) {
-                throw new IllegalArgumentException("관리자 암호가 틀려 등록이 불가능합니다.");
+                throw new UserAuthException("관리자 암호가 틀려 등록이 불가능합니다.");
             }
         }
 
@@ -126,14 +126,14 @@ public class UserService {
         if(userRepository.findByUsername(signupReqDto.getUsername()).orElse(null) == null)
             return userRepository.save(signupReqDto.toEntity()).getId();
         else
-            throw new IllegalArgumentException("중복된 사용자 ID 가 존재합니다.");
+            throw new UserAuthException("중복된 사용자 ID 가 존재합니다.");
     }
 
     public TokenDto login(String username, String password){
         User member = userRepository.findByUsername(username)
-                .orElseThrow(() -> {throw new IllegalArgumentException("가입되지 않은 아이디입니다.");});
+                .orElseThrow(() -> {throw new UserAuthException("가입되지 않은 아이디입니다.");});
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new IllegalArgumentException("잘못된 비밀번호입니다.");
+            throw new UserAuthException("잘못된 비밀번호입니다.");
         }
         return makeToken(member);
     }
@@ -143,7 +143,7 @@ public class UserService {
 
     public TokenDto reissue(TokenReqDto tokenReqDto) {
         if(!jwtTokenProvider.validateToken(tokenReqDto.getRefreshToken())){
-            throw new IllegalArgumentException("refresh token 오류");
+            throw new UserAuthException("refresh token 오류");
         }
 
         String accessTk = tokenReqDto.getAccessToken();
@@ -156,7 +156,7 @@ public class UserService {
         String refreshToken = redisTemplate.opsForValue().get("RT:" + user.getId());
 
         if(!refreshToken.equals(tokenReqDto.getRefreshToken())){
-            throw new IllegalArgumentException("refresh token 불일치");
+            throw new UserAuthException("refresh token 불일치");
         }
 
         TokenDto newTk = jwtTokenProvider.createToken(String.valueOf(user.getId()), user.getGrades());
